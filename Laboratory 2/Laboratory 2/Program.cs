@@ -8,60 +8,82 @@ namespace Laboratory_2
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("=== University System ===\n");
+            Console.WriteLine("=== University System with Generics ===\n");
 
-            // Create students
+            // Create generic databases
+            var studentDB = new Database<Student>();
+            var professorDB = new Database<Professor>();
+
+            // Create and add students
             var student1 = new Student(Guid.NewGuid(), "Alice Johnson", "Female", 20, "Computer Science", 3);
             var student2 = new Student(Guid.NewGuid(), "Bob Smith", "Male", 22, "Mathematics", 4);
 
-            // Create professors
+            studentDB.Add(student1);
+            studentDB.Add(student2);
+
+            // Create and add professors
             var professor1 = new Professor(Guid.NewGuid(), "Dr. Emily Davis", "Female", 45, "Computer Science");
             var professor2 = new Professor(Guid.NewGuid(), "Dr. Michael Brown", "Male", 50, "Mathematics");
 
-            // Create university
-            var university = new University(Guid.NewGuid(), "Tech University",
-                new List<Student> { student1, student2 },
-                new List<Professor> { professor1, professor2 });
+            professorDB.Add(professor1);
+            professorDB.Add(professor2);
 
-            // Display information
-            Console.WriteLine("=== University Info ===");
+            // Demonstrate generic interface usage
+            Console.WriteLine("=== Generic Interface Demo ===");
+            IDatabase<Student> studentInterface = studentDB;
+            IDatabase<Professor> professorInterface = professorDB;
+
+            Console.WriteLine($"Students count: {studentInterface.GetAll().Count}");
+            Console.WriteLine($"Professors count: {professorInterface.GetAll().Count}");
+
+            // Display all using generic method
+            studentDB.DisplayAll();
+            professorDB.DisplayAll();
+
+            // Search using generics
+            Console.WriteLine("\n=== Generic Search Demo ===");
+            var foundStudents = studentDB.Search("Alice");
+            Console.WriteLine($"Found {foundStudents.Count} students matching 'Alice'");
+
+            var foundProfessors = professorDB.Search("Computer");
+            Console.WriteLine($"Found {foundProfessors.Count} professors matching 'Computer'");
+
+            // Find by ID using generics
+            Console.WriteLine("\n=== Generic FindById Demo ===");
+            var foundStudent = studentDB.FindById(student1.Id);
+            if (foundStudent != null)
+            {
+                Console.WriteLine($"Found student by ID: {foundStudent.Name}");
+            }
+
+            // Create university with our databases
+            var university = new University(Guid.NewGuid(), "Tech University",
+                studentDB.GetAll(),
+                professorDB.GetAll());
+
+            Console.WriteLine("\n=== University Info ===");
             university.Display();
 
-            Console.WriteLine("\n=== Students ===");
-            foreach (var student in university.Students)
-            {
-                student.Display();
-            }
-
-            Console.WriteLine("\n=== Professors ===");
-            foreach (var professor in university.Professors)
-            {
-                professor.Display();
-            }
-
-            // Demonstrate interface usage
+            // Demonstrate interface (non-generic)
             Console.WriteLine("\n=== Interface Demo ===");
             IEntity entity = student1;
             Console.WriteLine($"Is Valid: {entity.IsValid()}");
-            Console.WriteLine($"Info: {entity.Info()}");
             Console.WriteLine($"Search 'Alice': {entity.Search("Alice")}");
 
-            // Demonstrate delegate usage
+            // Demonstrate delegate
             Console.WriteLine("\n=== Delegate Demo ===");
-            student1.CustomSearchLogic = (query) => {
-                Console.WriteLine($"Using custom search for: {query}");
-                return student1.Name.ToUpper().Contains(query.ToUpper()); // Case-sensitive search
-            };
-
-            Console.WriteLine($"Custom search for 'ALICE': {student1.Search("ALICE")}");
-            Console.WriteLine($"Normal search for 'bob': {student2.Search("bob")}");
+            SearchDelegate searchDelegate = (query) => query.Length > 3;
+            Console.WriteLine($"Delegate search 'test': {searchDelegate("test")}");
+            Console.WriteLine($"Delegate search 'hi': {searchDelegate("hi")}");
 
             // Save to files
             Console.WriteLine("\n=== Saving to Files ===");
             try
             {
-                FileManager.FileAdd(student1);
-                FileManager.FileAdd(professor1);
+                foreach (var student in studentDB.GetAll())
+                    FileManager.FileAdd(student);
+                foreach (var professor in professorDB.GetAll())
+                    FileManager.FileAdd(professor);
                 FileManager.FileAdd(university);
                 Console.WriteLine("Files saved successfully!");
             }
