@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using UniversitySystem;
 
 namespace Laboratory_2
@@ -8,89 +9,144 @@ namespace Laboratory_2
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("=== University System with Generics ===\n");
+            Console.WriteLine("=== University System with LINQ ===\n");
 
-            // Create generic databases
+            // Create databases and add data
             var studentDB = new Database<Student>();
             var professorDB = new Database<Professor>();
 
-            // Create and add students
-            var student1 = new Student(Guid.NewGuid(), "Alice Johnson", "Female", 20, "Computer Science", 3);
-            var student2 = new Student(Guid.NewGuid(), "Bob Smith", "Male", 22, "Mathematics", 4);
+            // Add more students for better LINQ demonstration
+            studentDB.Add(new Student(Guid.NewGuid(), "Alice Johnson", "Female", 20, "Computer Science", 3));
+            studentDB.Add(new Student(Guid.NewGuid(), "Bob Smith", "Male", 22, "Mathematics", 4));
+            studentDB.Add(new Student(Guid.NewGuid(), "Charlie Brown", "Male", 19, "Physics", 2));
+            studentDB.Add(new Student(Guid.NewGuid(), "Diana Prince", "Female", 21, "Computer Science", 5));
 
-            studentDB.Add(student1);
-            studentDB.Add(student2);
+            // Add professors
+            professorDB.Add(new Professor(Guid.NewGuid(), "Dr. Emily Davis", "Female", 45, "Computer Science"));
+            professorDB.Add(new Professor(Guid.NewGuid(), "Dr. Michael Brown", "Male", 50, "Mathematics"));
+            professorDB.Add(new Professor(Guid.NewGuid(), "Dr. Sarah Wilson", "Female", 38, "Physics"));
 
-            // Create and add professors
-            var professor1 = new Professor(Guid.NewGuid(), "Dr. Emily Davis", "Female", 45, "Computer Science");
-            var professor2 = new Professor(Guid.NewGuid(), "Dr. Michael Brown", "Male", 50, "Mathematics");
+            Console.WriteLine("=== 1. LINQ FILTERING ===");
 
-            professorDB.Add(professor1);
-            professorDB.Add(professor2);
-
-            // Demonstrate generic interface usage
-            Console.WriteLine("=== Generic Interface Demo ===");
-            IDatabase<Student> studentInterface = studentDB;
-            IDatabase<Professor> professorInterface = professorDB;
-
-            Console.WriteLine($"Students count: {studentInterface.GetAll().Count}");
-            Console.WriteLine($"Professors count: {professorInterface.GetAll().Count}");
-
-            // Display all using generic method
-            studentDB.DisplayAll();
-            professorDB.DisplayAll();
-
-            // Search using generics
-            Console.WriteLine("\n=== Generic Search Demo ===");
-            var foundStudents = studentDB.Search("Alice");
-            Console.WriteLine($"Found {foundStudents.Count} students matching 'Alice'");
-
-            var foundProfessors = professorDB.Search("Computer");
-            Console.WriteLine($"Found {foundProfessors.Count} professors matching 'Computer'");
-
-            // Find by ID using generics
-            Console.WriteLine("\n=== Generic FindById Demo ===");
-            var foundStudent = studentDB.FindById(student1.Id);
-            if (foundStudent != null)
+            // Filter students by speciality
+            var csStudents = studentDB.FilterBy(s => s.Speciality == "Computer Science");
+            Console.WriteLine($"Computer Science students: {csStudents.Count}");
+            foreach (var student in csStudents)
             {
-                Console.WriteLine($"Found student by ID: {foundStudent.Name}");
+                student.Display();
             }
 
-            // Create university with our databases
-            var university = new University(Guid.NewGuid(), "Tech University",
-                studentDB.GetAll(),
-                professorDB.GetAll());
+            // Filter students by grade
+            var topStudents = studentDB.FilterBy(s => s.Grade >= 4);
+            Console.WriteLine($"\nTop students (grade >= 4): {topStudents.Count}");
+            foreach (var student in topStudents)
+            {
+                student.Display();
+            }
 
-            Console.WriteLine("\n=== University Info ===");
+            // Filter professors by age
+            var youngProfessors = professorDB.FilterBy(p => p.Age < 45);
+            Console.WriteLine($"\nYoung professors (age < 45): {youngProfessors.Count}");
+            foreach (var prof in youngProfessors)
+            {
+                prof.Display();
+            }
+
+            Console.WriteLine("\n=== 2. LINQ SORTING ===");
+
+            // Sort students by name (ascending)
+            var studentsByName = studentDB.SortAscending(s => s.Name);
+            Console.WriteLine("Students sorted by name (A-Z):");
+            foreach (var student in studentsByName)
+            {
+                Console.WriteLine($"  {student.Name}");
+            }
+
+            // Sort students by age (descending)
+            var studentsByAge = studentDB.SortDescending(s => s.Age);
+            Console.WriteLine("\nStudents sorted by age (oldest first):");
+            foreach (var student in studentsByAge)
+            {
+                Console.WriteLine($"  {student.Name} - {student.Age} years old");
+            }
+
+            // Sort students by grade (descending)
+            var studentsByGrade = studentDB.SortDescending(s => s.Grade);
+            Console.WriteLine("\nStudents sorted by grade (highest first):");
+            foreach (var student in studentsByGrade)
+            {
+                Console.WriteLine($"  {student.Name} - Grade {student.Grade}");
+            }
+
+            Console.WriteLine("\n=== 3. LINQ AGGREGATION ===");
+
+            // Count total items
+            Console.WriteLine($"Total students: {studentDB.Count()}");
+            Console.WriteLine($"Total professors: {professorDB.Count()}");
+
+            // Check if any match condition
+            var hasYoungStudents = studentDB.Any(s => s.Age < 20);
+            Console.WriteLine($"Has students under 20: {hasYoungStudents}");
+
+            var hasFemaleProfessors = professorDB.Any(p => p.Gender == "Female");
+            Console.WriteLine($"Has female professors: {hasFemaleProfessors}");
+
+            // More aggregation using LINQ directly on lists
+            var allStudents = studentDB.GetAll();
+
+            var averageAge = allStudents.Average(s => s.Age);
+            Console.WriteLine($"Average student age: {averageAge:F1}");
+
+            var maxGrade = allStudents.Max(s => s.Grade);
+            Console.WriteLine($"Highest grade: {maxGrade}");
+
+            var minAge = allStudents.Min(s => s.Age);
+            Console.WriteLine($"Youngest student age: {minAge}");
+
+            var totalGrades = allStudents.Sum(s => s.Grade);
+            Console.WriteLine($"Sum of all grades: {totalGrades}");
+
+            Console.WriteLine("\n=== 4. COMPLEX LINQ QUERIES ===");
+
+            // Chain multiple LINQ operations
+            var topCSStudents = allStudents
+                .Where(s => s.Speciality == "Computer Science")  // Filter
+                .Where(s => s.Grade >= 3)                        // Filter more
+                .OrderByDescending(s => s.Grade)                 // Sort
+                .Take(2)                                         // Take top 2
+                .ToList();
+
+            Console.WriteLine("Top 2 Computer Science students:");
+            foreach (var student in topCSStudents)
+            {
+                student.Display();
+            }
+
+            // Group students by speciality
+            var groupedStudents = allStudents
+                .GroupBy(s => s.Speciality)
+                .ToList();
+
+            Console.WriteLine("\nStudents grouped by speciality:");
+            foreach (var group in groupedStudents)
+            {
+                Console.WriteLine($"{group.Key}: {group.Count()} students");
+            }
+
+            Console.WriteLine("\n=== Regular Features Still Work ===");
+
+            // Create university
+            var university = new University(Guid.NewGuid(), "Tech University",
+                studentDB.GetAll(), professorDB.GetAll());
             university.Display();
 
-            // Demonstrate interface (non-generic)
-            Console.WriteLine("\n=== Interface Demo ===");
-            IEntity entity = student1;
-            Console.WriteLine($"Is Valid: {entity.IsValid()}");
-            Console.WriteLine($"Search 'Alice': {entity.Search("Alice")}");
+            // Interface demo
+            IEntity entity = allStudents.First();
+            Console.WriteLine($"First student valid: {entity.IsValid()}");
 
-            // Demonstrate delegate
-            Console.WriteLine("\n=== Delegate Demo ===");
+            // Delegate demo
             SearchDelegate searchDelegate = (query) => query.Length > 3;
             Console.WriteLine($"Delegate search 'test': {searchDelegate("test")}");
-            Console.WriteLine($"Delegate search 'hi': {searchDelegate("hi")}");
-
-            // Save to files
-            Console.WriteLine("\n=== Saving to Files ===");
-            try
-            {
-                foreach (var student in studentDB.GetAll())
-                    FileManager.FileAdd(student);
-                foreach (var professor in professorDB.GetAll())
-                    FileManager.FileAdd(professor);
-                FileManager.FileAdd(university);
-                Console.WriteLine("Files saved successfully!");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error: {ex.Message}");
-            }
 
             Console.WriteLine("\nPress any key to exit...");
             Console.ReadKey();
